@@ -132,7 +132,7 @@ def caihongpi():
             data = json.loads(data)
             data = data["newslist"][0]["content"]
             if("XXX" in data):
-                data.replace("XXX","蒋蒋")
+                data.replace("XXX","宝贝")
             return data
         except:
             return ("彩虹屁API调取错误，请检查API是否正确申请或是否填写正确")

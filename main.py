@@ -7,7 +7,7 @@ import sys
 import os
 import http.client, urllib
 import json
-from zhdate import ZhDate 
+from zhdate import ZhDate  
 global false, null, true
 false = null = true = ''
 def get_color():

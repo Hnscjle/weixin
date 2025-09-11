@@ -202,23 +202,23 @@ def tip():
             return ("天气预报API调取错误，请检查API是否正确申请或是否填写正确"),""
 
 #下雨降雨量（毫米）
-# def tip_pop():
-#     if (Whether_tip!=False):
-#         try:
-#             conn = http.client.HTTPSConnection('api.tianapi.com')  #接口域名
-#             params = urllib.parse.urlencode({'key':tianxing_API,'city':city})
-#             headers = {'Content-type':'application/x-www-form-urlencoded'}
-#             conn.request('POST','/tianqi/index',params,headers)
-#             res = conn.getresponse()
-#             data = res.read()
-#             data = json.loads(data)
-#             pop = data["newslist"][0]["pcpn"]
-#             return int(float(pop))
-#         except:
-#             return ("天气预报API调取错误，请检查API是否正确申请或是否填写正确"),""
+def tip_pop():
+    if (Whether_tip!=False):
+        try:
+            conn = http.client.HTTPSConnection('api.tianapi.com')  #接口域名
+            params = urllib.parse.urlencode({'key':tianxing_API,'city':city})
+            headers = {'Content-type':'application/x-www-form-urlencoded'}
+            conn.request('POST','/tianqi/index',params,headers)
+            res = conn.getresponse()
+            data = res.read()
+            data = json.loads(data)
+            pop = data["newslist"][0]["pcpn"]
+            return int(float(pop))
+        except:
+            return ("天气预报API调取错误，请检查API是否正确申请或是否填写正确"),""
 
 #推送信息
-def send_message(to_user, access_token, city_name, weather, max_temperature, min_temperature, pipi, lizhi, tips, note_en, note_ch, health_tip, lucky_):
+def send_message(to_user, access_token, city_name, weather, max_temperature, min_temperature, pipi, lizhi, pop， tips, note_en, note_ch, health_tip, lucky_):
     url = "https://api.weixin.qq.com/cgi-bin/message/template/send?access_token={}".format(access_token)
     week_list = ["星期日", "星期一", "星期二", "星期三", "星期四", "星期五", "星期六"]
     year = localtime().tm_year

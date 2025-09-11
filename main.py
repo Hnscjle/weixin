@@ -170,36 +170,36 @@ def lucky():
             return ("星座运势API调取错误，请检查API是否正确申请或是否填写正确")
 
 # #励志名言
-# def lizhi():
-#     if (Whether_lizhi!=False):
-#         try:
-#             conn = http.client.HTTPSConnection('api.tianapi.com')  #接口域名
-#             params = urllib.parse.urlencode({'key':tianxing_API})
-#             headers = {'Content-type':'application/x-www-form-urlencoded'}
-#             conn.request('POST','/lzmy/index',params,headers)
-#             res = conn.getresponse()
-#             data = res.read()
-#             data = json.loads(data)
-#             return data["newslist"][0]["saying"]
-#         except:
-#             return ("励志古言API调取错误，请检查API是否正确申请或是否填写正确")
-        
-
-#下雨概率和建议
-def tip():
-    if (Whether_tip!=False):
+def lizhi():
+    if (Whether_lizhi!=False):
         try:
             conn = http.client.HTTPSConnection('api.tianapi.com')  #接口域名
-            params = urllib.parse.urlencode({'key':tianxing_API,'city':city})
+            params = urllib.parse.urlencode({'key':tianxing_API})
             headers = {'Content-type':'application/x-www-form-urlencoded'}
-            conn.request('POST','/tianqi/index',params,headers)
+            conn.request('POST','/lzmy/index',params,headers)
             res = conn.getresponse()
             data = res.read()
             data = json.loads(data)
-            tips = data["newslist"][0]["tips"]
-            return tips
+            return data["newslist"][0]["saying"]
         except:
-            return ("天气预报API调取错误，请检查API是否正确申请或是否填写正确"),""
+            return ("励志古言API调取错误，请检查API是否正确申请或是否填写正确")
+        
+
+#下雨概率和建议
+# def tip():
+#     if (Whether_tip!=False):
+#         try:
+#             conn = http.client.HTTPSConnection('api.tianapi.com')  #接口域名
+#             params = urllib.parse.urlencode({'key':tianxing_API,'city':city})
+#             headers = {'Content-type':'application/x-www-form-urlencoded'}
+#             conn.request('POST','/tianqi/index',params,headers)
+#             res = conn.getresponse()
+#             data = res.read()
+#             data = json.loads(data)
+#             tips = data["newslist"][0]["tips"]
+#             return tips
+#         except:
+#             return ("天气预报API调取错误，请检查API是否正确申请或是否填写正确"),""
 
 #下雨概率和建议
 def tip_pop():

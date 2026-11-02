@@ -20,8 +20,8 @@ def get_color():
 def get_access_token():
     # appId
     app_id = config["app_id"]
-    # appSecret
-    app_secret = config["app_secret"]
+    # appSecret：优先读环境变量，本地调试回落到 config.json
+    app_secret = os.getenv("APP_SECRET") or config["app_secret"]
     post_url = ("https://api.weixin.qq.com/cgi-bin/token?grant_type=client_credential&appid={}&secret={}"
                 .format(app_id, app_secret))
     try:
@@ -68,27 +68,87 @@ def get_birthday(birthday, year, today):
 
 
 
+def to_bool(value) -> bool:
+    """把 config.json 里五花八门的开关写法统一转成 bool。
+
+    config.json 里 "false" / "False" 都是非空字符串，直接 `!= False` 判断永远为真，
+    导致想关闭的功能关不掉，所以必须显式转换。
+
+    Args:
+        value: config.json 里的原始值（可能是 bool / str / None）
+
+    Returns:
+        对应的布尔值
+    """
+    if isinstance(value, bool):
+        return value
+    if isinstance(value, str):
+        return value.strip().lower() in ("true", "1", "yes", "y", "on")
+    return bool(value)
+
+
 def get_weather(location_id, qw_key, qw_host):
+    """调用和风天气 v7 三日预报接口，获取今日天气。
+
+    Args:
+        location_id: 和风天气 LocationID（如合肥 101220101）
+        qw_key: 和风天气 API Key，从环境变量 QW_KEY 读取
+        qw_host: 和风天气控制台分配的专属 API Host
+
+    Returns:
+        (天气状况, 最高温, 最低温) 三元组；失败时返回占位文案
+    """
+    fallback = ("天气接口异常", "0", "0")
+
+    # 关键：Key 为 None 时 requests 会静默丢弃这个请求头（2.28.1 与 2.34 实测均是），
+    # 服务端返回 401，响应体是 {"error": {...}} 而不是业务结构，
+    # 于是 res_json["code"] 抛 KeyError 被 except 吞掉，只留下"天气接口异常"。提前拦掉。
+    if not qw_key:
+        print("和风天气请求失败：未取到 API Key。"
+              "GitHub Actions 请在仓库 Settings → Secrets 添加 QW_KEY，"
+              "并在 workflow 的 step 里用 env 注入。")
+        return fallback
+
+    url = f"https://{qw_host}/v7/weather/3d"
+    params = {"location": location_id, "lang": "zh"}
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/103.0.0.0 Safari/537.36",
+        "X-QW-Api-Key": qw_key,  # V7 必须放请求头，不能拼在 URL 里
+    }
+
     try:
-        url = f"https://{qw_host}/v7/weather/3d?location={location_id}"
-        headers = {
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/103.0.0.0 Safari/537.36",
-            "X-QW-Api-Key": qw_key   # ✅ V7必须放请求头，不能拼url
-        }
-        r = get(url, headers=headers, timeout=10)
-        res_json = r.json()
-        print("和风返回完整数据：", res_json) # 加打印，看控制台报错码
-        if res_json["code"] != "200":
-            print("和风错误码：", res_json["code"])
-            return "天气接口异常", "0", "0"
-        today = res_json["daily"][0]
-        weather = today["textDay"]
-        temp = today["tempMax"]
-        tempn = today["tempMin"]
-        return weather, temp, tempn
+        r = get(url, headers=headers, params=params, timeout=10)
     except Exception as e:
-        print("和风天气请求异常：", e)
-        return "天气接口异常", "0", "0"
+        print("和风天气网络请求异常：", e)
+        return fallback
+
+    # 401/403/404 时响应体是 {"error": {...}}，不是业务结构，先按 HTTP 状态拦一道
+    if r.status_code != 200:
+        print(f"和风天气 HTTP {r.status_code}：{r.text[:300]}")
+        return fallback
+
+    try:
+        res_json = r.json()
+    except Exception as e:
+        print("和风天气响应不是合法 JSON：", e, r.text[:300])
+        return fallback
+
+    code = str(res_json.get("code", ""))
+    if code != "200":
+        detail = res_json.get("error", {}).get("detail") or res_json.get("message") or res_json
+        print(f"和风天气错误码 {code}：{detail}")
+        return fallback
+
+    daily = res_json.get("daily") or []
+    if not daily:
+        print("和风天气返回 daily 为空：", res_json)
+        return fallback
+
+    today = daily[0]
+    weather = today.get("textDay") or "未知"
+    temp = today.get("tempMax") or "0"
+    tempn = today.get("tempMin") or "0"
+    return weather, temp, tempn
 
 
 
@@ -351,8 +411,8 @@ if __name__ == "__main__":
         os.system("pause")
         sys.exit(1)
 
-    # 和风天气参数
-    qw_key = os.getenv("QW_KEY")
+    # 和风天气参数：Key 优先走环境变量（GitHub Secrets），本地调试可回落到 config.json
+    qw_key = os.getenv("QW_KEY") or config.get("qw_key", "")
     qw_host = config["qw_host"]
     qw_location = config["qw_location"]
 
@@ -363,24 +423,24 @@ if __name__ == "__main__":
     # 传入省份和市获取天气信息
     province, city = config["province"], config["city"]
     weather, max_temperature, min_temperature = get_weather(qw_location, qw_key, qw_host)
-    #获取天行API
-    tianxing_API=config["tianxing_API"]
+    #获取天行API：优先读环境变量，本地调试回落到 config.json
+    tianxing_API = os.getenv("TIANXING_API") or config["tianxing_API"]
     #是否开启天气预报API
-    Whether_tip=config["Whether_tip"]
+    Whether_tip = to_bool(config["Whether_tip"])
     #是否启用词霸每日一句
-    Whether_Eng=config["Whether_Eng"]
+    Whether_Eng = to_bool(config["Whether_Eng"])
     #是否启用星座API
-    Whether_lucky=config["Whether_lucky"]
+    Whether_lucky = to_bool(config["Whether_lucky"])
     #是否启用励志古言API
-    Whether_lizhi=config["Whether_lizhi"]
+    Whether_lizhi = to_bool(config["Whether_lizhi"])
     #是否启用彩虹屁API
-    Whether_caihongpi=config["Whether_caihongpi"]
+    Whether_caihongpi = to_bool(config["Whether_caihongpi"])
     #是否启用健康小提示API
-    Whether_health=config["Whether_health"]
+    Whether_health = to_bool(config["Whether_health"])
     #获取星座
     astro = config["astro"]
-    # 获取词霸每日金句
-    note_ch, note_en = get_ciba()
+    # 获取词霸每日金句（注意顺序：函数返回 (英文, 中文)）
+    note_en, note_ch = get_ciba()
     #彩虹屁
     pipi = caihongpi()
     #健康小提示

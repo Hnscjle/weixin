@@ -181,43 +181,44 @@ def lizhi():
             return ("励志古言API调取错误，请检查API是否正确申请或是否填写正确")
         
 
-#下雨概率和建议
-def tip():
-    if (Whether_tip!=False):
-        try:
-            conn = http.client.HTTPSConnection('api.tianapi.com')  #接口域名
-            params = urllib.parse.urlencode({'key':tianxing_API,'city':city})
-            headers = {'Content-type':'application/x-www-form-urlencoded'}
-            conn.request('POST','/tianqi/index',params,headers)
-            res = conn.getresponse()
-            data = res.read()
-            data = json.loads(data)
-            tips = data["newslist"][0]["tips"]
-            return tips
-        except Exception as e:
-            print("tip接口异常：", e)
-            return "天气预报API调取错误，请检查API是否正确申请或是否填写正确"
-    else:
-        return ""
+# #下雨概率和建议
+# def tip():
+#     if (Whether_tip!=False):
+#         try:
+#             conn = http.client.HTTPSConnection('api.tianapi.com')  #接口域名
+#             params = urllib.parse.urlencode({'key':tianxing_API,'city':city})
+#             headers = {'Content-type':'application/x-www-form-urlencoded'}
+#             conn.request('POST','/tianqi/index',params,headers)
+#             res = conn.getresponse()
+#             data = res.read()
+#             data = json.loads(data)
+#             tips = data["newslist"][0]["tips"]
+#             return tips
+#         except Exception as e:
+#             print("tip接口异常：", e)
+#             return "天气预报API调取错误，请检查API是否正确申请或是否填写正确"
+#     else:
+#         return ""
 
-#下雨降雨量（毫米）
-def tip_pop():
-    if (Whether_tip!=False):
-        try:
-            conn = http.client.HTTPSConnection('api.tianapi.com')  #接口域名
-            params = urllib.parse.urlencode({'key':tianxing_API,'city':city})
-            headers = {'Content-type':'application/x-www-form-urlencoded'}
-            conn.request('POST','/tianqi/index',params,headers)
-            res = conn.getresponse()
-            data = res.read()
-            data = json.loads(data)
-            pop = data["newslist"][0]["pcpn"]
-            return int(float(pop))
-        except Exception as e:
-            print("tip_pop接口异常：", e)
-            return 0
-    else:
-        return 0
+# #下雨降雨量（毫米）
+# def tip_pop():
+#     if (Whether_tip!=False):
+#         try:
+#             conn = http.client.HTTPSConnection('api.tianapi.com')  #接口域名
+#             params = urllib.parse.urlencode({'key':tianxing_API,'city':city})
+#             headers = {'Content-type':'application/x-www-form-urlencoded'}
+#             conn.request('POST','/tianqi/index',params,headers)
+#             res = conn.getresponse()
+#             data = res.read()
+#             data = json.loads(data)
+#             pop = data["newslist"][0]["pcpn"]
+#             return int(float(pop))
+#         except Exception as e:
+#             print("tip_pop接口异常：", e)
+#             return 0
+#     else:
+#         return 0
+
 
 
 #推送信息
@@ -337,15 +338,20 @@ def send_message(to_user, access_token, city_name, weather, max_temperature, min
 if __name__ == "__main__":
     try:
         with open("./config.json", encoding="utf-8") as f:
-            config = eval(f.read())
+            config = json.load(f)
     except FileNotFoundError:
-        print("推送消息失败，请检查config.txt文件是否与程序位于同一路径")
+        print("推送消息失败，请检查config.json文件是否与程序位于同一路径")
         os.system("pause")
         sys.exit(1)
-    except SyntaxError:
-        print("推送消息失败，请检查配置文件格式是否正确")
+    except json.JSONDecodeError:
+        print("推送消息失败，请检查config.json格式是否正确")
         os.system("pause")
         sys.exit(1)
+
+    # 和风天气参数
+    qw_key = os.getenv("QW_KEY")
+    qw_host = config["qw_host"]
+    qw_location = config["qw_location"]
 
     # 获取accessToken
     accessToken = get_access_token()
@@ -353,7 +359,7 @@ if __name__ == "__main__":
     users = config["user"]
     # 传入省份和市获取天气信息
     province, city = config["province"], config["city"]
-    weather, max_temperature, min_temperature = get_weather(province, city)
+    weather, max_temperature, min_temperature = get_weather(qw_location, qw_key, qw_host)
     #获取天行API
     tianxing_API=config["tianxing_API"]
     #是否开启天气预报API
@@ -376,16 +382,17 @@ if __name__ == "__main__":
     pipi = caihongpi()
     #健康小提示
     health_tip = health()
-    #下雨概率和建议
-    tips = tip()
-    pop  = tip_pop()
+# #下雨概率和建议
+# tips = tip()
+# pop  = tip_pop()
+
     #励志名言
     lizhi = lizhi()
     #星座运势
     lucky_ = lucky()
     # 公众号推送消息
     for user in users:
-        send_message(user, accessToken, city, weather, max_temperature, min_temperature, pipi, lizhi,pop,tips, note_en, note_ch, health_tip, lucky_)
+        send_message(user, accessToken, city, weather, max_temperature, min_temperature, pipi, lizhi, "", "", note_en, note_ch, health_tip, lucky_)
     import time
     time_duration = 3.5
     time.sleep(time_duration)

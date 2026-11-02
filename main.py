@@ -68,36 +68,26 @@ def get_birthday(birthday, year, today):
 
 
 
-def get_weather(province, city):
-    # 城市id
+def get_weather(location_id, qw_key, qw_host):
     try:
-        city_id = cityinfo.cityInfo[province][city]["AREAID"]
-    except KeyError:
-        print("推送消息失败，请检查省份或城市是否正确")
-        os.system("pause")
-        sys.exit(1)
-    # city_id = 101180901
-    # 毫秒级时间戳
-    t = (int(round(time() * 1000)))
-    headers = {
-        "Referer": "http://www.weather.com.cn/weather1d/{}.shtml".format(city_id),
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) '
-                      'AppleWebKit/537.36 (KHTML, like Gecko) Chrome/103.0.0.0 Safari/537.36'
-    }
-    url = "http://d1.weather.com.cn/dingzhi/{}.html?_={}".format(city_id, t)
-    response = get(url, headers=headers)
-    response.encoding = "utf-8"
-    response_data = response.text.split(";")[0].split("=")[-1]
-    response_json = eval(response_data)
-    # print(response_json)
-    weatherinfo = response_json["weatherinfo"]
-    # 天气
-    weather = weatherinfo["weather"]
-    # 最高气温
-    temp = weatherinfo["temp"]
-    # 最低气温
-    tempn = weatherinfo["tempn"]
-    return weather, temp, tempn
+        url = f"https://{qw_host}/v7/weather/3d?location={location_id}&key={qw_key}"
+        headers = {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/103.0.0.0 Safari/537.36"
+        }
+        r = get(url, headers=headers, timeout=10)
+        res_json = r.json()
+        if res_json["code"] != "200":
+            print("和风天气接口返回错误：", res_json)
+            return "天气接口异常", "0", "0"
+        today = res_json["daily"][0]
+        weather = today["textDay"]
+        temp = today["tempMax"]
+        tempn = today["tempMin"]
+        return weather, temp, tempn
+    except Exception as e:
+        print("和风天气请求失败：", e)
+        return "天气接口异常", "0", "0"
+
 
 
 

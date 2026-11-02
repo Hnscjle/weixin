@@ -24,5 +24,12 @@ jobs:
           python -m pip install --upgrade pip
           pip3 install -r requirements.txt
       - name: weixin
+        env:
+          # 和风天气 API Key，必须在仓库 Settings → Secrets and variables → Actions 里添加。
+          # 缺少这一行，main.py 里 os.getenv("QW_KEY") 就是 None，天气必然推送失败。
+          QW_KEY: ${{ secrets.QW_KEY }}
+          # 下面两个可选：不想把密钥明文写进 config.json 时，同样改用 Secrets 注入
+          APP_SECRET: ${{ secrets.APP_SECRET }}
+          TIANXING_API: ${{ secrets.TIANXING_API }}
         run: |
           python3 main.py

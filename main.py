@@ -70,14 +70,16 @@ def get_birthday(birthday, year, today):
 
 def get_weather(location_id, qw_key, qw_host):
     try:
-        url = f"https://{qw_host}/v7/weather/3d?location={location_id}&key={qw_key}"
+        url = f"https://{qw_host}/v7/weather/3d?location={location_id}"
         headers = {
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/103.0.0.0 Safari/537.36"
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/103.0.0.0 Safari/537.36",
+            "X-QW-Api-Key": qw_key   # ✅ V7必须放请求头，不能拼url
         }
         r = get(url, headers=headers, timeout=10)
         res_json = r.json()
+        print("和风返回完整数据：", res_json) # 加打印，看控制台报错码
         if res_json["code"] != "200":
-            print("和风天气接口返回错误：", res_json)
+            print("和风错误码：", res_json["code"])
             return "天气接口异常", "0", "0"
         today = res_json["daily"][0]
         weather = today["textDay"]
@@ -85,8 +87,9 @@ def get_weather(location_id, qw_key, qw_host):
         tempn = today["tempMin"]
         return weather, temp, tempn
     except Exception as e:
-        print("和风天气请求失败：", e)
+        print("和风天气请求异常：", e)
         return "天气接口异常", "0", "0"
+
 
 
 

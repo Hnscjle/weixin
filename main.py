@@ -111,12 +111,18 @@ def get_ciba():
                 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) '
                             'AppleWebKit/537.36 (KHTML, like Gecko) Chrome/103.0.0.0 Safari/537.36'
             }
-            r = get(url, headers=headers)
+            r = get(url, headers=headers, timeout=10)  # 加上timeout，防止卡死
             note_en = r.json()["content"]
             note_ch = r.json()["note"]
             return (note_en,note_ch)
-        except:
-            return ("词霸API调取错误")
+        except Exception as e:
+            print("词霸接口异常：", e)
+            # 失败固定返回两个字符串，不会解包报错
+            return ("词霸API调取错误", "")
+    else:
+        # 如果关闭词霸功能，也要返回2个值
+        return ("", "")
+
 
 
 #彩虹屁
@@ -198,8 +204,11 @@ def tip():
             data = json.loads(data)
             tips = data["newslist"][0]["tips"]
             return tips
-        except:
-            return ("天气预报API调取错误，请检查API是否正确申请或是否填写正确"),""
+        except Exception as e:
+            print("tip接口异常：", e)
+            return "天气预报API调取错误，请检查API是否正确申请或是否填写正确"
+    else:
+        return ""
 
 #下雨降雨量（毫米）
 def tip_pop():
@@ -214,8 +223,12 @@ def tip_pop():
             data = json.loads(data)
             pop = data["newslist"][0]["pcpn"]
             return int(float(pop))
-        except:
-            return ("天气预报API调取错误，请检查API是否正确申请或是否填写正确"),""
+        except Exception as e:
+            print("tip_pop接口异常：", e)
+            return 0
+    else:
+        return 0
+
 
 #推送信息
 def send_message(to_user, access_token, city_name, weather, max_temperature, min_temperature, pipi, lizhi, pop, tips, note_en, note_ch, health_tip, lucky_):
